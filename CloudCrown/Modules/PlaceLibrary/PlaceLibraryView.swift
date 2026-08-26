@@ -95,6 +95,7 @@ struct PlaceLibraryView: View {
                 HStack(spacing: SkySpacing.s) {
                     Image(systemName: "magnifyingglass").foregroundColor(SkyPalette.textTertiary)
                     TextField("Search a city or district", text: $presenter.searchQuery)
+                        .foregroundColor(SkyPalette.textPrimary)
                         .font(SkyFont.body(15))
                         .autocapitalization(.words)
                         .disableAutocorrection(true)
@@ -355,6 +356,7 @@ struct PlaceEditorSheet: View {
                                         .font(SkyFont.micro(11).weight(.semibold))
                                         .foregroundColor(SkyPalette.textTertiary)
                                     TextField("Region/City", text: draft.timeZoneIdentifier)
+                                        .foregroundColor(SkyPalette.textPrimary)
                                         .font(SkyFont.body(14))
                                         .autocapitalization(.none)
                                         .disableAutocorrection(true)
@@ -432,6 +434,7 @@ struct PlaceEditorSheet: View {
         VStack(alignment: .leading, spacing: 5) {
             Text(title).font(SkyFont.micro(11).weight(.semibold)).foregroundColor(SkyPalette.textTertiary)
             TextField(placeholder, text: binding)
+                .foregroundColor(SkyPalette.textPrimary)
                 .font(SkyFont.body(15))
                 .padding(SkySpacing.m)
                 .background(RoundedRectangle(cornerRadius: SkyRadius.small, style: .continuous)

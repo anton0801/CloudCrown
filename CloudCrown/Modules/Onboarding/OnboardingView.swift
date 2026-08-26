@@ -459,6 +459,7 @@ struct OnboardingView: View {
                             .font(SkyFont.micro(11).weight(.semibold))
                             .foregroundColor(SkyPalette.textTertiary)
                         TextField("Morning walk", text: $presenter.activityName)
+                            .foregroundColor(SkyPalette.textPrimary)
                             .font(SkyFont.body(15))
                             .padding(SkySpacing.m)
                             .background(
@@ -537,6 +538,7 @@ struct OnboardingView: View {
                                 Image(systemName: "magnifyingglass")
                                     .foregroundColor(SkyPalette.textTertiary)
                                 TextField("City or district", text: $presenter.searchQuery)
+                                    .foregroundColor(SkyPalette.textPrimary)
                                     .font(SkyFont.body(15))
                                     .autocapitalization(.words)
                                     .disableAutocorrection(true)

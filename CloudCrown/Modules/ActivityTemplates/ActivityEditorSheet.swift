@@ -110,6 +110,7 @@ struct ActivityEditorSheet: View {
                 VStack(alignment: .leading, spacing: 5) {
                     Text("Name").font(SkyFont.micro(11).weight(.semibold)).foregroundColor(SkyPalette.textTertiary)
                     TextField("Activity name", text: draft.name)
+                        .foregroundColor(SkyPalette.textPrimary)
                         .font(SkyFont.body(15))
                         .padding(SkySpacing.m)
                         .background(RoundedRectangle(cornerRadius: SkyRadius.small, style: .continuous)
@@ -123,6 +124,7 @@ struct ActivityEditorSheet: View {
                 VStack(alignment: .leading, spacing: 5) {
                     Text("Note (optional)").font(SkyFont.micro(11).weight(.semibold)).foregroundColor(SkyPalette.textTertiary)
                     TextField("What matters for this activity", text: draft.note)
+                        .foregroundColor(SkyPalette.textPrimary)
                         .font(SkyFont.body(14))
                         .padding(SkySpacing.m)
                         .background(RoundedRectangle(cornerRadius: SkyRadius.small, style: .continuous)

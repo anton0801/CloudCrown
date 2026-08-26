@@ -25,6 +25,11 @@ struct CloudCrownApp: App {
                 .environmentObject(environment)
                 .environmentObject(environment.repository)
                 .tint(SkyPalette.azure)
+                // SkyPalette is a fixed light palette with no dark variants, so
+                // the scheme is pinned. Without this, Dark Mode leaves every
+                // explicit colour unchanged while any default-coloured text —
+                // notably every TextField — flips to white on a white card.
+                .preferredColorScheme(.light)
                 .task {
                     // First automatic check of the session.
                     environment.startRefresh(trigger: .launch)

@@ -403,6 +403,7 @@ struct AlertRuleEditorSheet: View {
                 VStack(alignment: .leading, spacing: 5) {
                     Text("Rule name").font(SkyFont.micro(11).weight(.semibold)).foregroundColor(SkyPalette.textTertiary)
                     TextField("Morning walk window", text: draft.name)
+                        .foregroundColor(SkyPalette.textPrimary)
                         .font(SkyFont.body(15))
                         .padding(SkySpacing.m)
                         .background(RoundedRectangle(cornerRadius: SkyRadius.small, style: .continuous)

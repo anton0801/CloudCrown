@@ -69,7 +69,9 @@ struct CloudCard<Content: View>: View {
 
 /// Elevated card used for the "primary" moment on a screen (next good window).
 struct CelestialCard<Content: View>: View {
-    var gradient: LinearGradient = SkyPalette.azureGradient
+    /// heroGradient, not azureGradient: this card is always filled with
+    /// white text, and azureGradient's light end leaves it at 1.69:1.
+    var gradient: LinearGradient = SkyPalette.heroGradient
     @ViewBuilder var content: () -> Content
 
     var body: some View {

@@ -19,11 +19,18 @@ enum SkyFont {
         .system(size: size, weight: .regular, design: .rounded)
     }
     static func caption(_ size: CGFloat = 13) -> Font {
-        .system(size: size, weight: .regular, design: .rounded)
+        .system(size: max(size, minimumPointSize), weight: .regular, design: .rounded)
     }
-    static func micro(_ size: CGFloat = 11) -> Font {
-        .system(size: size, weight: .medium, design: .rounded)
+
+    /// Smallest type in the app. The floor is enforced here rather than at each
+    /// call site: the codebase asked for 9pt and 10pt in ~95 places, which is
+    /// below what is comfortably readable on device.
+    static func micro(_ size: CGFloat = 12) -> Font {
+        .system(size: max(size, minimumPointSize), weight: .medium, design: .rounded)
     }
+
+    /// No text in the app renders smaller than this.
+    static let minimumPointSize: CGFloat = 12
     /// Tabular figures for metric readouts so numbers do not jitter.
     static func metric(_ size: CGFloat = 28) -> Font {
         .system(size: size, weight: .bold, design: .rounded).monospacedDigit()

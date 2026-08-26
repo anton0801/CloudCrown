@@ -306,6 +306,7 @@ struct FeedbackView: View {
             VStack(alignment: .leading, spacing: SkySpacing.s) {
                 SectionHeader(title: "Note", subtitle: "Optional")
                 TextEditor(text: $presenter.note)
+                    .foregroundColor(SkyPalette.textPrimary)
                     .font(SkyFont.body(14))
                     .frame(height: 88)
                     .padding(SkySpacing.s)

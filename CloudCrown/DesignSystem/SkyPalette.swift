@@ -12,9 +12,12 @@ enum SkyPalette {
 
     // MARK: - Brand core
 
-    /// #2F8CFF — primary azure, used for actions and active states.
-    static let azure = Color(hex: 0x2F8CFF)
-    /// #73D2FF — light sky, used for glows and secondary accents.
+    /// #006FF9 — primary azure, used for actions and active states.
+    /// Deepened from #2F8CFF so it clears 4.5:1 against white both as text
+    /// and as a filled button carrying white text.
+    static let azure = Color(hex: 0x006FF9)
+    /// #73D2FF — light sky. DECORATIVE ONLY: glows, strokes, chart fills.
+    /// Never place text on it — white text scores 1.69:1 here.
     static let lightBlue = Color(hex: 0x73D2FF)
     /// #172B69 — deep blue, used for primary text and night layers.
     static let deepBlue = Color(hex: 0x172B69)
@@ -28,8 +31,10 @@ enum SkyPalette {
     // MARK: - Semantic
 
     static let textPrimary = deepBlue
-    static let textSecondary = Color(hex: 0x5A6B96)
-    static let textTertiary = Color(hex: 0x8D9BBD)
+    static let textSecondary = Color(hex: 0x5A6B96)   // 5.28:1 on white
+    /// Deepened from #8D9BBD (2.78:1) — the old value was unreadable at the
+    /// small sizes it is used at. Now 4.50:1.
+    static let textTertiary = Color(hex: 0x6376A5)
 
     static let surface = Color.white
     static let surfaceSunken = Color(hex: 0xEDF5FE)
@@ -39,18 +44,18 @@ enum SkyPalette {
     static let divider = Color(hex: 0xE6EFFB)
 
     /// Verdict colours — deliberately distinct from raw metric colours.
-    static let verdictBest = Color(hex: 0x18A971)
-    static let verdictAcceptable = Color(hex: 0x2F8CFF)
-    static let verdictNotRecommended = Color(hex: 0xE0623D)
-    static let verdictUnknown = Color(hex: 0x8D9BBD)
+    static let verdictBest = Color(hex: 0x13875B)            // 4.52:1
+    static let verdictAcceptable = Color(hex: 0x006FF9)      // 4.52:1
+    static let verdictNotRecommended = Color(hex: 0xD04921)  // 4.51:1
+    static let verdictUnknown = Color(hex: 0x6376A5)         // 4.50:1
 
     /// Warning / lightning accents.
-    static let warning = Color(hex: 0xE8A020)
-    static let danger = Color(hex: 0xE0483D)
-    static let success = Color(hex: 0x18A971)
+    static let warning = Color(hex: 0xA06C11)  // 4.52:1 — #E8A020 was 2.22:1
+    static let danger = Color(hex: 0xDD372B)   // 4.51:1
+    static let success = Color(hex: 0x13875B)  // 4.52:1
 
     /// Unknown / needs-verification. Never green, never zero-looking.
-    static let unknown = Color(hex: 0x9AA7C4)
+    static let unknown = Color(hex: 0x6276A3)  // 4.53:1 — #9AA7C4 was 2.41:1
 
     // MARK: - Gradients
 
@@ -63,6 +68,18 @@ enum SkyPalette {
             ],
             startPoint: .top,
             endPoint: .bottom
+        )
+    }
+
+    /// Gradient for surfaces that carry white text.
+    ///
+    /// `azureGradient` starts at #73D2FF, where white text sits at 1.69:1 and
+    /// is effectively invisible. Every point of this one clears 4.5:1.
+    static var heroGradient: LinearGradient {
+        LinearGradient(
+            colors: [azure, deepBlue],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
         )
     }
 

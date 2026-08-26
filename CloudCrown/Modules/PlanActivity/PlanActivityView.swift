@@ -111,6 +111,7 @@ struct PlanActivityView: View {
                 VStack(alignment: .leading, spacing: 5) {
                     Text("Title").font(SkyFont.micro(11).weight(.semibold)).foregroundColor(SkyPalette.textTertiary)
                     TextField("Plan title", text: $presenter.title)
+                        .foregroundColor(SkyPalette.textPrimary)
                         .font(SkyFont.body(15))
                         .padding(SkySpacing.m)
                         .background(RoundedRectangle(cornerRadius: SkyRadius.small, style: .continuous)
@@ -123,6 +124,7 @@ struct PlanActivityView: View {
                 VStack(alignment: .leading, spacing: 5) {
                     Text("Preparation notes").font(SkyFont.micro(11).weight(.semibold)).foregroundColor(SkyPalette.textTertiary)
                     TextEditor(text: $presenter.notes)
+                        .foregroundColor(SkyPalette.textPrimary)
                         .font(SkyFont.body(14))
                         .frame(height: 88)
                         .padding(SkySpacing.s)

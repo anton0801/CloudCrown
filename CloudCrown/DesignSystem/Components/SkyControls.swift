@@ -52,20 +52,29 @@ struct SkyButton: View {
         }
         .buttonStyle(SkyPressStyle())
         .disabled(!isEnabled || isLoading)
-        .opacity(isEnabled ? 1 : 0.45)
+        .opacity(isEnabled ? 1 : 0.9)
     }
 
     @ViewBuilder private var background: some View {
-        switch kind {
-        case .primary: SkyPalette.azureGradient
-        case .gold: LinearGradient(colors: [SkyPalette.gold, Color(hex: 0xE8B33A)], startPoint: .topLeading, endPoint: .bottomTrailing)
-        case .secondary: SkyPalette.surface
-        case .ghost: Color.clear
-        case .destructive: SkyPalette.surface
+        if !isEnabled {
+            // A real disabled treatment. Previously the whole button was
+            // dropped to 45% opacity, which left white text floating over a
+            // pale fill at roughly 2:1 — the control read as broken rather
+            // than unavailable.
+            SkyPalette.surfaceSunken
+        } else {
+            switch kind {
+            case .primary: SkyPalette.heroGradient
+            case .gold: LinearGradient(colors: [SkyPalette.gold, Color(hex: 0xE8B33A)], startPoint: .topLeading, endPoint: .bottomTrailing)
+            case .secondary: SkyPalette.surface
+            case .ghost: Color.clear
+            case .destructive: SkyPalette.surface
+            }
         }
     }
 
     private var foreground: Color {
+        guard isEnabled else { return SkyPalette.textTertiary }
         switch kind {
         case .primary: return .white
         case .gold: return SkyPalette.deepBlue
@@ -76,6 +85,7 @@ struct SkyButton: View {
     }
 
     private var borderColor: Color {
+        guard isEnabled else { return SkyPalette.hairline }
         switch kind {
         case .primary, .gold: return .clear
         case .secondary: return SkyPalette.azure.opacity(0.35)
@@ -85,6 +95,7 @@ struct SkyButton: View {
     }
 
     private var shadowColor: Color {
+        guard isEnabled else { return .clear }
         switch kind {
         case .primary: return SkyPalette.azure.opacity(0.28)
         case .gold: return SkyPalette.gold.opacity(0.30)
@@ -206,7 +217,7 @@ struct SkySegmented<T: Hashable>: View {
                         .padding(.vertical, 9)
                         .background(
                             RoundedRectangle(cornerRadius: SkyRadius.small, style: .continuous)
-                                .fill(selection == option ? AnyShapeStyle(SkyPalette.azureGradient) : AnyShapeStyle(Color.clear))
+                                .fill(selection == option ? AnyShapeStyle(SkyPalette.heroGradient) : AnyShapeStyle(Color.clear))
                         )
                 }
                 .buttonStyle(SkyPressStyle())

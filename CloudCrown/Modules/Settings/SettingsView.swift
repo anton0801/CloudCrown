@@ -502,6 +502,7 @@ struct EraseDataSheet: View {
                                     .font(SkyFont.caption(13).weight(.semibold))
                                     .foregroundColor(SkyPalette.textPrimary)
                                 TextField(presenter.eraseConfirmationPhrase, text: $presenter.eraseConfirmationText)
+                                    .foregroundColor(SkyPalette.textPrimary)
                                     .font(SkyFont.body(15))
                                     .autocapitalization(.allCharacters)
                                     .disableAutocorrection(true)
