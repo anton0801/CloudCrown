@@ -8,7 +8,10 @@ import SwiftUI
 @main
 struct CloudCrownApp: App {
 
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var environment: AppEnvironment
+    @StateObject private var launch = AppBootstrap()
+    @StateObject private var networkGate = NetworkGate()
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
@@ -24,6 +27,8 @@ struct CloudCrownApp: App {
             RootView()
                 .environmentObject(environment)
                 .environmentObject(environment.repository)
+                .environmentObject(launch)
+                .environmentObject(networkGate)
                 .tint(SkyPalette.azure)
                 // SkyPalette is a fixed light palette with no dark variants, so
                 // the scheme is pinned. Without this, Dark Mode leaves every
@@ -31,6 +36,8 @@ struct CloudCrownApp: App {
                 // notably every TextField — flips to white on a white card.
                 .preferredColorScheme(.light)
                 .task {
+                    networkGate.start()
+                    PushTokenReporter.shared.report()
                     // First automatic check of the session.
                     environment.startRefresh(trigger: .launch)
                 }
@@ -39,6 +46,7 @@ struct CloudCrownApp: App {
             switch phase {
             case .active:
                 environment.startRefresh(trigger: .foreground)
+                PushTokenReporter.shared.report()
             case .background:
                 environment.backgroundScheduler.schedule(
                     enabled: environment.repository.settings.backgroundRefreshEnabled

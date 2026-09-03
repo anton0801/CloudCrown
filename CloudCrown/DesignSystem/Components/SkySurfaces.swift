@@ -43,6 +43,101 @@ struct SkyBackground: View {
     }
 }
 
+/// A light, original Greek-mythic layer used only on the welcome flow.
+/// The artwork stays deliberately muted so content remains the priority.
+struct OlympusOnboardingBackground: View {
+    let step: Int
+
+    private var imageName: String {
+        switch step {
+        case 0: return "OlympusDawn"
+        case 1: return "OlympusTwilight"
+        case 2: return "OlympusSunrise"
+        default: return "OlympusStorm"
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            Image(imageName)
+                .resizable()
+                .scaledToFill()
+                .ignoresSafeArea()
+                .overlay(Color.white.opacity(0.42))
+                .overlay(
+                    LinearGradient(colors: [.white.opacity(0.22), .clear, .white.opacity(0.30)],
+                                   startPoint: .top,
+                                   endPoint: .bottom)
+                )
+
+            Circle()
+                .fill(SkyPalette.lightBlue.opacity(0.18))
+                .frame(width: 320, height: 320)
+                .blur(radius: 75)
+                .offset(x: -120, y: -270)
+            Circle()
+                .fill(SkyPalette.gold.opacity(0.14))
+                .frame(width: 260, height: 260)
+                .blur(radius: 70)
+                .offset(x: 120, y: 280)
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+/// Ten reusable Olympus accents: five illustrated props and five gold glyphs.
+/// Glyphs keep the system light-weight while the focal moments use the bespoke art.
+struct OlympusAccent: View {
+    enum Kind: CaseIterable {
+        case zeus, microphone, podium, hourglass, shield, laurel
+        case calendar, lightning, gem, clouds, timer
+
+        var imageName: String? {
+            switch self {
+            case .zeus: return "OlympusZeus"
+            case .microphone: return "OlympusMicrophone"
+            case .podium: return "OlympusPodium"
+            case .hourglass: return "OlympusHourglass"
+            case .shield: return "OlympusShield"
+            case .laurel: return "OlympusLaurel"
+            default: return nil
+            }
+        }
+
+        var symbolName: String {
+            switch self {
+            case .calendar: return "calendar"
+            case .lightning: return "bolt.fill"
+            case .gem: return "diamond.fill"
+            case .clouds: return "cloud.fill"
+            case .timer: return "timer"
+            default: return "sparkles"
+            }
+        }
+    }
+
+    let kind: Kind
+    var size: CGFloat = 56
+
+    var body: some View {
+        Group {
+            if let imageName = kind.imageName {
+                Image(imageName)
+                    .resizable()
+                    .scaledToFit()
+            } else {
+                Image(systemName: kind.symbolName)
+                    .resizable()
+                    .scaledToFit()
+                    .foregroundStyle(SkyPalette.crownGradient)
+                    .shadow(color: SkyPalette.gold.opacity(0.45), radius: 7, y: 3)
+            }
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
+    }
+}
+
 /// A white "cloud surface" card with cool glow shadow.
 struct CloudCard<Content: View>: View {
     var padding: CGFloat = SkySpacing.l

@@ -14,20 +14,29 @@ final class SettingsInteractor: SettingsInteractorInput {
     private let calendar: CalendarService
     private let refreshCoordinator: RefreshCoordinator
     private let backgroundScheduler: BackgroundRefreshScheduler
+    private let auth: AuthService
+    private let sync: SyncService
 
     init(repository: DataRepository,
          location: LocationService,
          notifications: NotificationService,
          calendar: CalendarService,
          refreshCoordinator: RefreshCoordinator,
-         backgroundScheduler: BackgroundRefreshScheduler) {
+         backgroundScheduler: BackgroundRefreshScheduler,
+         auth: AuthService,
+         sync: SyncService) {
         self.repository = repository
         self.location = location
         self.notifications = notifications
         self.calendar = calendar
         self.refreshCoordinator = refreshCoordinator
         self.backgroundScheduler = backgroundScheduler
+        self.auth = auth
+        self.sync = sync
     }
+
+    var accountEmail: String? { auth.currentUser?.email }
+    var syncStatus: SyncStatus { sync.status }
 
     var backgroundStatus: BackgroundRefreshScheduler.Status { backgroundScheduler.status }
     var lastRefreshReport: RefreshReport? { refreshCoordinator.lastReport }
@@ -102,6 +111,10 @@ final class SettingsInteractor: SettingsInteractorInput {
         notifications.cancelAll()
         repository.eraseAllData()
     }
+
+    /// Deleting local data does not delete the account; that is a separate,
+    /// explicit action on the Account screen.
+    var isSignedIn: Bool { auth.isSignedIn }
 
     func cancelAllNotifications() { notifications.cancelAll() }
 }

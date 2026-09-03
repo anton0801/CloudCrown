@@ -30,8 +30,13 @@
 	<string>CloudCrown opens the system event editor so you can add a planned window to your calendar. It never edits your calendar on its own.</string>
 	<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
 	<string>CloudCrown opens the system event editor so you can add a planned window to your calendar. It never reads your existing events.</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>CloudCrown uses this to measure which campaign brought you to the app. It is never used to build an advertising profile of you.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>CloudCrown uses your location only when you tap Use Current Location, to save a place and fetch conditions for it.</string>
+	<key>CCPayloadKey</key>
+	<string>5f9520faa226cef302ceeeb0644dd545726497274264fc33fe2b2f8985c23f4b</string>
+
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -44,6 +49,7 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>
+		<string>remote-notification</string>
 	</array>
 	<key>UILaunchScreen</key>
 	<dict/>

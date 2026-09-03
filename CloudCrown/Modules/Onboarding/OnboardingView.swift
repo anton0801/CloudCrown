@@ -19,7 +19,7 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack {
-            SkyBackground()
+            OlympusOnboardingBackground(step: presenter.step.rawValue)
 
             VStack(spacing: 0) {
                 header
@@ -29,15 +29,12 @@ struct OnboardingView: View {
                         stepContent
                     }
                     .padding(.horizontal, SkySpacing.l)
-                    .padding(.bottom, 140)
+                    .padding(.bottom, SkySpacing.xl)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
-
-            VStack {
-                Spacer()
-                footer
-            }
         }
+        .safeAreaInset(edge: .bottom, spacing: 0) { footer }
         .onAppear { presenter.onAppear() }
         .sheet(isPresented: $router.showsLimitsEditor) {
             OnboardingLimitsEditor(presenter: presenter)
@@ -81,15 +78,30 @@ struct OnboardingView: View {
     }
 
     private var titleBlock: some View {
-        VStack(alignment: .leading, spacing: SkySpacing.s) {
-            Text(presenter.step.title)
-                .font(SkyFont.display(30))
-                .foregroundColor(SkyPalette.textPrimary)
-                .fixedSize(horizontal: false, vertical: true)
-            Text(presenter.step.subtitle)
-                .font(SkyFont.body(15))
-                .foregroundColor(SkyPalette.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
+        ZStack(alignment: .topTrailing) {
+            VStack(alignment: .leading, spacing: SkySpacing.s) {
+                Text(presenter.step.title)
+                    .font(SkyFont.display(30))
+                    .foregroundColor(SkyPalette.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(presenter.step.subtitle)
+                    .font(SkyFont.body(15))
+                    .foregroundColor(SkyPalette.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.trailing, 76)
+
+            OlympusAccent(kind: onboardingAccent, size: 60)
+        }
+    }
+
+    private var onboardingAccent: OlympusAccent.Kind {
+        switch presenter.step {
+        case .problem: return .lightning
+        case .limits: return .shield
+        case .explanation: return .hourglass
+        case .firstActivity: return .podium
         }
     }
 

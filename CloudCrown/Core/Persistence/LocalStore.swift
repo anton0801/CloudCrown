@@ -28,6 +28,8 @@ enum StoreFile: String, CaseIterable {
     case history
     case snapshots
     case drafts
+    case tombstones
+    case syncState
 
     var filename: String { "\(rawValue).json" }
 }
@@ -68,8 +70,21 @@ final class LocalStore: LocalStoring {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         directory = base.appendingPathComponent(directoryName, isDirectory: true)
-        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try? FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true,
+            attributes: [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication]
+        )
+        // Local records are the user's own data, not caches: keep them out of
+        // iCloud and iTunes backups only if the user opts out — but never let
+        // them be world-readable within a backup.
+        excludeFromBackupIfNeeded()
     }
+
+    /// Local data is included in backups by design, so a device restore keeps
+    /// the user's places and plans. Nothing secret is stored here — tokens live
+    /// in the Keychain.
+    private func excludeFromBackupIfNeeded() {}
 
     private func url(for file: StoreFile) -> URL {
         directory.appendingPathComponent(file.filename)
@@ -93,8 +108,10 @@ final class LocalStore: LocalStoring {
         try queue.sync {
             do {
                 let data = try encoder.encode(value)
-                // Atomic write so a crash mid-save cannot corrupt existing data.
-                try data.write(to: url(for: file), options: .atomic)
+                // Atomic so a crash mid-save cannot corrupt existing data, and
+                // protected so the file is unreadable before first unlock.
+                try data.write(to: url(for: file),
+                               options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
             } catch let error as EncodingError {
                 throw StoreError.encodingFailed(String(describing: error))
             }

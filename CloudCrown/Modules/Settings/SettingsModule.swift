@@ -22,6 +22,8 @@ protocol SettingsInteractorInput: AnyObject {
     var backgroundStatus: BackgroundRefreshScheduler.Status { get }
     var lastRefreshReport: RefreshReport? { get }
     var lastRefreshCheck: Date? { get }
+    var accountEmail: String? { get }
+    var syncStatus: SyncStatus { get }
     func exportData() throws -> Data
     func eraseAll()
     func cancelAllNotifications()
@@ -40,10 +42,11 @@ struct SettingsCounts {
 // MARK: - Router
 
 enum SettingsRoute: Identifiable, Equatable {
-    case comfortProfile, activities, places, alerts
+    case account, comfortProfile, activities, places, alerts
 
     var id: String {
         switch self {
+        case .account: return "account"
         case .comfortProfile: return "profile"
         case .activities: return "activities"
         case .places: return "places"
@@ -66,6 +69,8 @@ final class SettingsRouter: ObservableObject {
     @ViewBuilder
     func destination(for route: SettingsRoute) -> some View {
         switch route {
+        case .account:
+            AccountModule.build(environment: environment)
         case .comfortProfile:
             ComfortProfileModule.build(environment: environment)
         case .activities:
@@ -88,7 +93,9 @@ enum SettingsModule {
                                             notifications: environment.notifications,
                                             calendar: environment.calendar,
                                             refreshCoordinator: environment.refreshCoordinator,
-                                            backgroundScheduler: environment.backgroundScheduler)
+                                            backgroundScheduler: environment.backgroundScheduler,
+                                            auth: environment.auth,
+                                            sync: environment.sync)
         let router = SettingsRouter(environment: environment)
         let presenter = SettingsPresenter(interactor: interactor, router: router)
         return SettingsView(presenter: presenter, router: router)

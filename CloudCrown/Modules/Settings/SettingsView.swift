@@ -25,6 +25,7 @@ struct SettingsView: View {
                     if let message = presenter.saveError {
                         SaveErrorBanner(message: message, onDismiss: presenter.dismissSaveError)
                     }
+                    accountSection
                     setupLinks
                     unitsSection
                     locationSection
@@ -50,6 +51,51 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $router.showsEraseConfirmation) {
             EraseDataSheet(presenter: presenter)
+        }
+    }
+
+    // MARK: - Account
+
+    private var accountSection: some View {
+        VStack(alignment: .leading, spacing: SkySpacing.m) {
+            SectionHeader(title: "Account", subtitle: "Optional — CloudCrown works without one")
+            Button { presenter.open(.account) } label: {
+                CloudCard(tint: SkyPalette.azure) {
+                    HStack(spacing: SkySpacing.m) {
+                        ZStack {
+                            Circle().fill(SkyPalette.azure.opacity(0.13)).frame(width: 38, height: 38)
+                            Image(systemName: presenter.isSignedIn ? "person.fill" : "person.crop.circle.badge.plus")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(SkyPalette.azure)
+                        }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(presenter.accountEmail ?? "Sign in or create an account")
+                                .font(SkyFont.headline(15))
+                                .foregroundColor(SkyPalette.textPrimary)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
+                            Text(presenter.isSignedIn
+                                 ? presenter.syncStatus.summary
+                                 : "Sync your limits, places, plans and reviews across devices")
+                                .font(SkyFont.micro(11))
+                                .foregroundColor(SkyPalette.textSecondary)
+                                .lineLimit(2)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        Spacer(minLength: 0)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(SkyPalette.hairline)
+                    }
+                }
+            }
+            .buttonStyle(SkyPressStyle())
+
+            if presenter.isSignedIn {
+                Text("Account deletion is available on the Account screen.")
+                    .font(SkyFont.micro(10))
+                    .foregroundColor(SkyPalette.textTertiary)
+            }
         }
     }
 
@@ -406,7 +452,9 @@ struct SettingsView: View {
                     Text("Delete all data")
                         .font(SkyFont.headline(15))
                         .foregroundColor(SkyPalette.textPrimary)
-                    Text("Removes everything from this device and cancels every scheduled notification. There is no account, so nothing is left on a server.")
+                    Text(presenter.isSignedIn
+                         ? "Removes everything from this device and cancels every scheduled notification. Your account and anything already synced to it are not affected — delete the account itself on the Account screen."
+                         : "Removes everything from this device and cancels every scheduled notification. You are not signed in, so nothing is stored on a server.")
                         .font(SkyFont.caption(12))
                         .foregroundColor(SkyPalette.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)

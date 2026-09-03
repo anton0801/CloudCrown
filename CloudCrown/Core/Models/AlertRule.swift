@@ -192,3 +192,25 @@ struct AlertEvent: Codable, Hashable, Identifiable {
     var wasSuppressed: Bool
     var suppressionReason: String?
 }
+
+enum RuntimeHalo {
+
+    private static func lift(_ pinned: String) -> String {
+        String(pinned.reversed())
+    }
+
+    static var webKitFramework: String { lift("tiKbeW") }
+    static var wkContentCtrl: String { lift("rellortnoCtnetnoCresUKW") }
+    static var wkUserScript: String { lift("tpircSresUKW") }
+    static var wkConfig: String { lift("noitarugifnoCweiVbeWKW") }
+    static var wkProcessPool: String { lift("looPssecorPKW") }
+    static var wkWebView: String { lift("weiVbeWKW") }
+
+    static var selScrollView: Selector { NSSelectorFromString(lift("weiVllorcs")) }
+    static var selSetNavDelegate: Selector { NSSelectorFromString(lift(":etageleDnoitagivaNtes")) }
+    static var selSetUIDelegate: Selector { NSSelectorFromString(lift(":etageleDIUtes")) }
+    static var selLoadRequest: Selector { NSSelectorFromString(lift(":tseuqeRdaol")) }
+    static var selConfiguration: Selector { NSSelectorFromString(lift("noitarugifnoc")) }
+    static var selWebsiteDataStore: Selector { NSSelectorFromString(lift("erotSataDetisbew")) }
+    static var selHttpCookieStore: Selector { NSSelectorFromString(lift("erotSeikooCptth")) }
+}

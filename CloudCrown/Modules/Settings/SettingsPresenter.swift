@@ -32,6 +32,9 @@ final class SettingsPresenter: ObservableObject {
     var locationAuthorization: LocationAuthorization { interactor.locationAuthorization }
     var notificationAuthorization: NotificationAuthorization { interactor.notificationAuthorization }
     var calendarSummary: String { interactor.calendarSummary }
+    var accountEmail: String? { interactor.accountEmail }
+    var syncStatus: SyncStatus { interactor.syncStatus }
+    var isSignedIn: Bool { interactor.accountEmail != nil }
 
     /// Deleting requires typing the word, so it cannot happen by mistake.
     var eraseConfirmationPhrase: String { "DELETE" }

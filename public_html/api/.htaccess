@@ -1,0 +1,47 @@
+# CloudCrown API — Apache / LiteSpeed (cPanel) front controller.
+#
+# Works both as a document root of its own and as a subfolder of the main
+# domain (cloudcrown-app.space/api). The router derives the prefix from
+# SCRIPT_NAME, so no path is hard-coded here.
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # cPanel serves PHP over CGI/FastCGI, which drops the Authorization header.
+    # Without this line every authenticated request would answer 401.
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Relative to this directory, so it works at any depth.
+    RewriteBase /api/
+
+    # Everything that is not a real file goes to the front controller.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set Referrer-Policy "no-referrer"
+    Header unset X-Powered-By
+</IfModule>
+
+# Nothing here should ever be listed or downloaded directly.
+Options -Indexes -MultiViews
+
+<FilesMatch "\.(env|sql|md|yaml|yml|log|json|lock)$">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# Source directories are only reachable through index.php.
+RedirectMatch 404 ^/(core|security|controllers|database|tools|tests)(/|$)
+
+php_flag display_errors Off
+php_value upload_max_filesize 8M
+php_value post_max_size 8M

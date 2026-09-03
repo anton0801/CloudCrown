@@ -1,0 +1,403 @@
+openapi: 3.0.3
+info:
+  title: CloudCrown API
+  version: "1.0.0"
+  description: |
+    Accounts and cross-device synchronisation for the CloudCrown iOS app.
+
+    The app is local-first: every feature works signed out. An account only adds
+    synchronisation. Weather and air-quality data are fetched by the client
+    directly from Open-Meteo and never pass through this API.
+servers:
+  - url: https://cloudcrown-app.space/api/v1
+    description: Production
+
+tags:
+  - name: auth
+  - name: account
+  - name: sync
+  - name: horizon
+
+paths:
+  /health:
+    get:
+      tags: [auth]
+      summary: Liveness probe
+      security: []
+      responses:
+        "200":
+          description: Service is up
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+                  time: { type: string, format: date-time }
+
+  /auth/register:
+    post:
+      tags: [auth]
+      summary: Create an account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Credentials" }
+      responses:
+        "201":
+          description: Account created; session returned
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Session" }
+        "409":
+          description: Email already registered (code `email_already_registered`)
+          content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
+        "422":
+          description: Validation failed (code `validation_failed`)
+          content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
+
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Sign in
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Credentials" }
+      responses:
+        "200":
+          description: Session returned
+          content: { application/json: { schema: { $ref: "#/components/schemas/Session" } } }
+        "401":
+          description: |
+            Wrong password, or no such account. Both return the identical
+            `invalid_credentials` error so accounts cannot be enumerated.
+          content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
+
+  /auth/refresh:
+    post:
+      tags: [auth]
+      summary: Exchange a refresh token for a new session
+      description: The presented refresh token is revoked and a new one issued (rotation).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        "200":
+          description: New session
+          content: { application/json: { schema: { $ref: "#/components/schemas/Session" } } }
+        "401":
+          description: Token expired, revoked or already used
+
+  /auth/logout:
+    post:
+      tags: [auth]
+      summary: Revoke every refresh token for this account
+      responses:
+        "204": { description: Signed out }
+
+  /auth/me:
+    get:
+      tags: [auth]
+      summary: Current account
+      responses:
+        "200":
+          description: Account
+          content: { application/json: { schema: { $ref: "#/components/schemas/User" } } }
+        "401": { description: Not authenticated }
+
+  /auth/password:
+    post:
+      tags: [auth]
+      summary: Change password
+      description: |
+        Revokes all refresh tokens and invalidates every access token already
+        issued, so other devices must sign in again. There is no reset flow:
+        the current password is the only way to change it.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword, newPassword]
+              properties:
+                currentPassword: { type: string }
+                newPassword: { type: string, minLength: 8 }
+      responses:
+        "200":
+          description: |
+            Password changed. Every previously issued token is invalidated, so a
+            replacement session is returned for the calling device.
+          content: { application/json: { schema: { $ref: "#/components/schemas/Session" } } }
+        "422":
+          description: Current password wrong, or new password too weak
+          content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
+
+  /account:
+    delete:
+      tags: [account]
+      summary: Permanently delete the account
+      description: |
+        Required by App Store Review Guideline 5.1.1(v). Deletes the account
+        itself, not merely its data: the user row is removed and refresh tokens
+        and synced records cascade with it. The password is re-verified so a
+        lost unlocked device cannot delete the account.
+
+        There is no password-reset flow, so a user who has lost their password
+        cannot reach this endpoint. Deletion for that case is handled through
+        the published support address.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password, confirmation]
+              properties:
+                password: { type: string }
+                confirmation: { type: string, enum: [DELETE] }
+      responses:
+        "200":
+          description: Account deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [deletedAt]
+                properties:
+                  deletedAt: { type: string, format: date-time }
+                  purgeAt:
+                    type: string
+                    format: date-time
+                    description: When backups containing the account are purged.
+                  message: { type: string }
+        "401": { description: Password incorrect }
+        "422": { description: Confirmation missing }
+
+  /horizon/observe:
+    post:
+      tags: [horizon]
+      summary: Report the device facts available at app open
+      description: |
+        Public, called before sign-in. Upserts the device by its attribution key
+        and counts a launch. Empty values never overwrite known ones.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SealedPayload" }
+      responses:
+        "200":
+          description: Recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+        "422": { description: Payload missing, malformed, or missing the device key }
+
+  /horizon/resolve:
+    post:
+      tags: [horizon]
+      summary: Submit attribution and close the splash
+      description: |
+        Public. Stores the full conversion, forwards it outward with `source_ip`,
+        and reports the outcome. When the external service answers `ok:true` with
+        a URL, the response carries an `analytics-service` header. A forward
+        failure still returns 200 with `authorized: false`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SealedPayload" }
+      responses:
+        "200":
+          description: Resolved
+          headers:
+            analytics-service:
+              description: Present only when the external service returned ok and a URL.
+              schema: { type: string, format: uri }
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+                  authorized: { type: boolean }
+                  message: { type: string, nullable: true }
+
+  /horizon/link:
+    post:
+      tags: [horizon]
+      summary: Tie the device record to the signed-in account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SealedPayload" }
+      responses:
+        "204": { description: Linked }
+        "404": { description: Unknown device }
+
+  /sync:
+    get:
+      tags: [sync]
+      summary: Pull changes
+      parameters:
+        - in: query
+          name: since
+          schema: { type: string, format: date-time }
+          description: |
+            Server timestamp from the previous successful sync. Omit for a full
+            download. Returns only records whose server time is newer.
+      responses:
+        "200":
+          description: Changed records and deletions
+          content: { application/json: { schema: { $ref: "#/components/schemas/SyncPull" } } }
+    post:
+      tags: [sync]
+      summary: Push changes
+      description: |
+        Last-write-wins by the client's `updatedAt`: an older write never
+        replaces a newer stored record, so two offline devices converge.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SyncPush" }
+      responses:
+        "200":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  serverTime: { type: string, format: date-time }
+                  accepted: { type: integer }
+        "422":
+          description: A record was missing `id` or `updatedAt`
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Credentials:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password:
+          type: string
+          minLength: 8
+          description: At least 8 characters, including a letter and a number.
+    User:
+      type: object
+      required: [id, email, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        createdAt: { type: string, format: date-time }
+        emailVerified: { type: boolean }
+    Session:
+      type: object
+      required: [accessToken, refreshToken, expiresIn]
+      properties:
+        accessToken: { type: string }
+        refreshToken: { type: string }
+        expiresIn: { type: integer, description: Access-token lifetime in seconds }
+        user: { $ref: "#/components/schemas/User" }
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum:
+                [validation_failed, invalid_credentials, email_already_registered,
+                 unauthorized, not_found, rate_limited, internal_error]
+            message: { type: string }
+            fields:
+              type: object
+              additionalProperties: { type: string }
+              description: Per-field messages so a form can mark the right input.
+    SealedPayload:
+      type: object
+      required: [payload]
+      description: |
+        Base64 of AES-256-GCM `nonce(12) || ciphertext || tag(16)`. The plaintext
+        is a flat object whose field names are specific to this app and mapped to
+        columns server-side: `anchor` (device key), `os_line`, `vessel`,
+        `relay_id`, `catalog_id`, `signal`, `locale_tag`, `ad_id`, `build_tag`,
+        `hull`, `tz`, and `trace` (the conversion, verbatim).
+      properties:
+        payload: { type: string }
+    Tombstone:
+      type: object
+      required: [entityType, entityID, deletedAt]
+      properties:
+        entityType:
+          type: string
+          enum: [profile, place, activity, plan, alert, feedback]
+        entityID: { type: string, format: uuid }
+        deletedAt: { type: string, format: date-time }
+    SyncRecord:
+      type: object
+      description: |
+        The app's own entity, stored verbatim. Only `id` and `updatedAt` are
+        interpreted by the API, so the client model can evolve without a
+        server deploy.
+      required: [id, updatedAt]
+      additionalProperties: true
+      properties:
+        id: { type: string, format: uuid }
+        updatedAt: { type: string, format: date-time }
+    SyncPull:
+      type: object
+      required: [serverTime]
+      properties:
+        serverTime: { type: string, format: date-time }
+        profile: { $ref: "#/components/schemas/SyncRecord" }
+        places: { type: array, items: { $ref: "#/components/schemas/SyncRecord" } }
+        activities: { type: array, items: { $ref: "#/components/schemas/SyncRecord" } }
+        plans: { type: array, items: { $ref: "#/components/schemas/SyncRecord" } }
+        alerts: { type: array, items: { $ref: "#/components/schemas/SyncRecord" } }
+        feedback: { type: array, items: { $ref: "#/components/schemas/SyncRecord" } }
+        tombstones: { type: array, items: { $ref: "#/components/schemas/Tombstone" } }
+    SyncPush:
+      type: object
+      required: [clientTime]
+      properties:
+        clientTime: { type: string, format: date-time }
+        profile: { $ref: "#/components/schemas/SyncRecord" }
+        places: { type: array, items: { $ref: "#/components/schemas/SyncRecord" } }
+        activities: { type: array, items: { $ref: "#/components/schemas/SyncRecord" } }
+        plans: { type: array, items: { $ref: "#/components/schemas/SyncRecord" } }
+        alerts: { type: array, items: { $ref: "#/components/schemas/SyncRecord" } }
+        feedback: { type: array, items: { $ref: "#/components/schemas/SyncRecord" } }
+        tombstones: { type: array, items: { $ref: "#/components/schemas/Tombstone" } }
+
+security:
+  - bearerAuth: []

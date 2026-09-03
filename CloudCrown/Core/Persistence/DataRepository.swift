@@ -74,6 +74,9 @@ final class DataRepository: ObservableObject {
     /// Most recent snapshot per place id.
     @Published private(set) var snapshots: [UUID: ConditionSnapshot] = [:]
     @Published private(set) var lastStoreError: String?
+    /// Deletions waiting to be pushed to the server.
+    @Published private(set) var tombstones: [Tombstone] = []
+    @Published private(set) var syncState: SyncState = .empty
 
     private let store: LocalStoring
     private var drafts: [String: Data] = [:]
@@ -89,8 +92,18 @@ final class DataRepository: ObservableObject {
         self.notificationCanceller = notificationCanceller
     }
 
+    /// Records a deletion so it can be pushed to the server instead of the
+    /// record silently reappearing on the next pull.
+    private func addTombstone(_ type: EntityType, _ id: UUID) {
+        var candidate = tombstones.filter { !($0.entityType == type && $0.entityID == id) }
+        candidate.append(Tombstone(entityType: type, entityID: id, deletedAt: Date()))
+        _ = commit(\.tombstones, candidate, to: .tombstones)
+    }
+
     /// Cancels the system reminder belonging to a plan, so no notification
     /// outlives the plan that justified it.
+    func cancelReminderPublicly(_ plan: Plan) { cancelReminder(for: plan) }
+
     private func cancelReminder(for plan: Plan) {
         if let identifier = plan.reminderNotificationID {
             notificationCanceller?.cancel(identifier: identifier)
@@ -114,6 +127,8 @@ final class DataRepository: ObservableObject {
             let stored = try store.load([ConditionSnapshot].self, from: .snapshots) ?? []
             snapshots = Dictionary(uniqueKeysWithValues: stored.map { ($0.placeID, $0) })
             drafts = try store.load([String: Data].self, from: .drafts) ?? [:]
+            tombstones = try store.load([Tombstone].self, from: .tombstones) ?? []
+            syncState = try store.load(SyncState.self, from: .syncState) ?? .empty
         } catch {
             lastStoreError = error.localizedDescription
         }
@@ -156,6 +171,8 @@ final class DataRepository: ObservableObject {
             case .history: try store.save(history, to: .history)
             case .snapshots: try store.save(Array(snapshots.values), to: .snapshots)
             case .drafts: try store.save(drafts, to: .drafts)
+            case .tombstones: try store.save(tombstones, to: .tombstones)
+            case .syncState: try store.save(syncState, to: .syncState)
             }
             return nil
         } catch {
@@ -678,6 +695,7 @@ final class DataRepository: ObservableObject {
         if let error = commit(\.alerts, candidate, to: .alerts) {
             return .failure(message: error)
         }
+        addTombstone(.alert, id)
         record(.deleted, .alert, id: id, title: "“\(name)” deleted",
                detail: "No further notifications will be scheduled for this rule.")
         return .success(changes: ["Rule removed"])
@@ -867,6 +885,7 @@ final class DataRepository: ObservableObject {
         if let error = commit(\.snapshots, snapshotCandidate, to: .snapshots) { return .failure(message: error) }
 
         for plan in reminderOwners { cancelReminder(for: plan) }
+        addTombstone(.place, id)
         record(.deleted, .place, id: id, title: "“\(place.name)” deleted",
                detail: "Feedback history was kept so past results stay verifiable.",
                changes: detached.isEmpty ? ["Nothing else referenced this place"] : detached)
@@ -901,6 +920,7 @@ final class DataRepository: ObservableObject {
         if let error = commit(\.activities, activityCandidate, to: .activities) { return .failure(message: error) }
 
         for plan in reminderOwners { cancelReminder(for: plan) }
+        addTombstone(.activity, id)
         record(.deleted, .activity, id: id, title: "“\(activity.name)” deleted",
                detail: "Feedback history was kept so past results stay verifiable.",
                changes: detached.isEmpty ? ["Nothing else referenced this activity"] : detached)
@@ -920,6 +940,7 @@ final class DataRepository: ObservableObject {
         }
         // The plan is gone, so its reminder must be gone too.
         cancelReminder(for: plan)
+        addTombstone(.plan, id)
         record(.deleted, .plan, id: id, title: "“\(plan.title)” deleted",
                detail: plan.isCalendarConfirmed
                    ? "The calendar event was not removed — CloudCrown does not delete events it did not confirm creating."
@@ -950,6 +971,8 @@ final class DataRepository: ObservableObject {
         snapshots = [:]
         drafts = [:]
         history = []
+        tombstones = []
+        syncState = .empty
         record(.dataDeleted, .settings, title: "All local data deleted",
                detail: "Every place, activity, plan, alert and feedback entry was removed from this device.")
     }
@@ -1017,5 +1040,179 @@ enum SetupGap: Identifiable, Equatable {
         case .activity: return "figure.walk"
         case .place: return "mappin.and.ellipse"
         }
+    }
+}
+
+// MARK: - Synchronisation support
+
+extension DataRepository {
+
+    /// Everything changed locally since the last successful sync. A nil date
+    /// means the first sync, which sends the whole local set.
+    func changes(since date: Date?) -> LocalChanges {
+        var changes = LocalChanges()
+        func isNew(_ updatedAt: Date) -> Bool {
+            guard let date = date else { return true }
+            return updatedAt > date
+        }
+        if let profile = profile, isNew(profile.updatedAt) { changes.profile = profile }
+        changes.places = places.filter { isNew($0.updatedAt) }
+        changes.activities = activities.filter { isNew($0.updatedAt) }
+        changes.plans = plans.filter { isNew($0.updatedAt) }
+        changes.alerts = alerts.filter { isNew($0.updatedAt) }
+        changes.feedback = feedback.filter { isNew($0.updatedAt) }
+        changes.tombstones = tombstones.filter { isNew($0.deletedAt) }
+        return changes
+    }
+
+    /// Merges a server payload into local storage using last-write-wins on
+    /// `updatedAt`. A local record that is newer is kept and reported, never
+    /// silently overwritten.
+    @discardableResult
+    func applyRemote(_ payload: SyncPullResponse) -> (outcome: SaveOutcome, report: MergeReport) {
+        var report = MergeReport()
+
+        // Merge one collection by id, newest `updatedAt` wins.
+        func merge<T: Identifiable>(_ local: [T], _ remote: [T],
+                                    updatedAt: (T) -> Date) -> [T] where T.ID == UUID {
+            var byID = Dictionary(uniqueKeysWithValues: local.map { ($0.id, $0) })
+            for incoming in remote {
+                if let existing = byID[incoming.id] {
+                    if updatedAt(incoming) > updatedAt(existing) {
+                        byID[incoming.id] = incoming
+                        report.updated += 1
+                    } else if updatedAt(existing) > updatedAt(incoming) {
+                        report.keptLocal += 1
+                    }
+                } else {
+                    byID[incoming.id] = incoming
+                    report.updated += 1
+                }
+            }
+            return Array(byID.values)
+        }
+
+        var newPlaces = merge(places, payload.places) { $0.updatedAt }
+        var newActivities = merge(activities, payload.activities) { $0.updatedAt }
+        var newAlerts = merge(alerts, payload.alerts) { $0.updatedAt }
+        var newFeedback = merge(feedback, payload.feedback) { $0.updatedAt }
+
+        // Plans carry a device-local reminder identifier that must never be
+        // replaced by another device's value.
+        let localReminderIDs = Dictionary(uniqueKeysWithValues: plans.map { ($0.id, $0.reminderNotificationID) })
+        var newPlans = merge(plans, payload.plans) { $0.updatedAt }
+        for index in newPlans.indices {
+            newPlans[index].reminderNotificationID = localReminderIDs[newPlans[index].id] ?? nil
+        }
+
+        // Deletions from other devices.
+        for stone in payload.tombstones {
+            switch stone.entityType {
+            case .place:
+                if newPlaces.contains(where: { $0.id == stone.entityID }) { report.deleted += 1 }
+                newPlaces.removeAll { $0.id == stone.entityID && $0.updatedAt <= stone.deletedAt }
+            case .activity:
+                if newActivities.contains(where: { $0.id == stone.entityID }) { report.deleted += 1 }
+                newActivities.removeAll { $0.id == stone.entityID && $0.updatedAt <= stone.deletedAt }
+            case .plan:
+                if let plan = newPlans.first(where: { $0.id == stone.entityID }),
+                   plan.updatedAt <= stone.deletedAt {
+                    cancelReminderPublicly(plan)
+                    report.deleted += 1
+                }
+                newPlans.removeAll { $0.id == stone.entityID && $0.updatedAt <= stone.deletedAt }
+            case .alert:
+                if newAlerts.contains(where: { $0.id == stone.entityID }) { report.deleted += 1 }
+                newAlerts.removeAll { $0.id == stone.entityID && $0.updatedAt <= stone.deletedAt }
+            case .feedback:
+                if newFeedback.contains(where: { $0.id == stone.entityID }) { report.deleted += 1 }
+                newFeedback.removeAll { $0.id == stone.entityID && $0.updatedAt <= stone.deletedAt }
+            default:
+                break
+            }
+        }
+
+        var newProfile = profile
+        if let incoming = payload.profile {
+            if let existing = profile {
+                if incoming.updatedAt > existing.updatedAt {
+                    newProfile = incoming
+                    report.updated += 1
+                } else if existing.updatedAt > incoming.updatedAt {
+                    report.keptLocal += 1
+                }
+            } else {
+                newProfile = incoming
+                report.updated += 1
+            }
+        }
+
+        if let error = commit(\.places, newPlaces.sorted { $0.createdAt < $1.createdAt }, to: .places) {
+            return (.failure(message: error), report)
+        }
+        if let error = commit(\.activities, newActivities.sorted { $0.createdAt < $1.createdAt }, to: .activities) {
+            return (.failure(message: error), report)
+        }
+        if let error = commit(\.plans, newPlans.sorted { $0.window.start < $1.window.start }, to: .plans) {
+            return (.failure(message: error), report)
+        }
+        if let error = commit(\.alerts, newAlerts.sorted { $0.createdAt < $1.createdAt }, to: .alerts) {
+            return (.failure(message: error), report)
+        }
+        if let error = commit(\.feedback, newFeedback.sorted { $0.createdAt < $1.createdAt }, to: .feedback) {
+            return (.failure(message: error), report)
+        }
+        if newProfile != profile, let error = commit(\.profile, newProfile, to: .profile) {
+            return (.failure(message: error), report)
+        }
+
+        if !report.isEmpty {
+            record(.updated, .settings,
+                   title: "Synced from your account",
+                   detail: report.summary)
+        }
+        return (.success(changes: [report.summary]), report)
+    }
+
+    /// Clears tombstones the server has acknowledged.
+    @discardableResult
+    func clearTombstones(upTo date: Date) -> SaveOutcome {
+        let remaining = tombstones.filter { $0.deletedAt > date }
+        guard remaining.count != tombstones.count else { return .success(changes: []) }
+        if let error = commit(\.tombstones, remaining, to: .tombstones) {
+            return .failure(message: error)
+        }
+        return .success(changes: [])
+    }
+
+    @discardableResult
+    func updateSyncState(_ transform: (inout SyncState) -> Void) -> SaveOutcome {
+        var candidate = syncState
+        transform(&candidate)
+        if let error = commit(\.syncState, candidate, to: .syncState) {
+            return .failure(message: error)
+        }
+        return .success(changes: [])
+    }
+
+    /// Removes every local record when switching to a different account, so one
+    /// user's data can never leak into another's.
+    @discardableResult
+    func resetForAccountChange(newOwnerID: String?) -> SaveOutcome {
+        for plan in plans { cancelReminderPublicly(plan) }
+        if let error = commit(\.places, [], to: .places) { return .failure(message: error) }
+        if let error = commit(\.activities, [], to: .activities) { return .failure(message: error) }
+        if let error = commit(\.plans, [], to: .plans) { return .failure(message: error) }
+        if let error = commit(\.alerts, [], to: .alerts) { return .failure(message: error) }
+        if let error = commit(\.feedback, [], to: .feedback) { return .failure(message: error) }
+        if let error = commit(\.snapshots, [:], to: .snapshots) { return .failure(message: error) }
+        if let error = commit(\.tombstones, [], to: .tombstones) { return .failure(message: error) }
+        if let error = commit(\.profile, nil, to: .profile) { return .failure(message: error) }
+        var state = SyncState.empty
+        state.ownerUserID = newOwnerID
+        if let error = commit(\.syncState, state, to: .syncState) { return .failure(message: error) }
+        record(.dataDeleted, .settings, title: "Local data cleared for a different account",
+               detail: "Records belonging to the previous account were removed from this device.")
+        return .success(changes: ["Local data cleared"])
     }
 }

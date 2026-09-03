@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support — CloudCrown</title>
+<meta name="description" content="Help with CloudCrown: accounts, notifications, syncing, deletion, and how windows are scored.">
+<link rel="stylesheet" href="/assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👑</text></svg>">
+</head>
+<body>
+
+<header class="site">
+    <div class="wrap">
+        <a class="brand" href="/"><span class="mark">👑</span> CloudCrown</a>
+    </div>
+</header>
+
+<main class="doc">
+<div class="wrap">
+
+<h1>Support</h1>
+<p class="updated">Answers to the things people actually ask. If yours is not here, write to us.</p>
+
+<div class="contact">
+    <p style="margin:0;color:var(--ink-soft)">Email us and we reply within two business days.</p>
+    <a class="mail" href="mailto:support@cloudcrown-app.space">support@cloudcrown-app.space</a>
+    <p style="margin:0;font-size:.9rem;color:var(--ink-faint)">
+        Include your iOS version and app version (Settings → About) — it saves a round trip.
+    </p>
+</div>
+
+<h2>Getting started</h2>
+<div class="faq">
+
+<details open>
+    <summary>Do I need an account?</summary>
+    <p>No. Every feature works signed out and everything is stored on your device. An
+    account only synchronises your limits, places, activities, plans and reviews across
+    your own devices.</p>
+</details>
+
+<details>
+    <summary>Why does the app start empty?</summary>
+    <p>On purpose. CloudCrown never shows invented sample data as if it were yours. The
+    onboarding walks you through creating one real activity and one real place, and from
+    there everything you see is your own.</p>
+</details>
+
+<details>
+    <summary>Why does it say “Unknown” instead of a number?</summary>
+    <p>Because the data provider did not return that measurement for that place or hour.
+    Air quality and pollen coverage in particular varies by region. CloudCrown shows
+    Unknown rather than zero, and a window that depends on a missing value is marked
+    <em>Needs Verification</em> instead of being recommended.</p>
+</details>
+
+<details>
+    <summary>Why is no window found?</summary>
+    <p>Every interval in the range broke at least one of your required conditions. Open
+    <strong>Find Window</strong> and look at the closest interval — it lists exactly which
+    requirement blocked it and by how much. Widening the date range, loosening the hours,
+    shortening the duration, or revisiting that one limit usually fixes it.</p>
+</details>
+
+</div>
+
+<h2>Accounts and data</h2>
+<div class="faq">
+
+<details>
+    <summary>I forgot my password. How do I reset it?</summary>
+    <p>You cannot — CloudCrown has no password reset, and the app warns you about this
+    before you register. There is no recovery route, so the account and anything synced
+    to it are not retrievable.</p>
+    <p>Your records on the device are unaffected: the app keeps working signed out.</p>
+    <p>If you want the account deleted, email us from the address on the account and we
+    will remove it.</p>
+</details>
+
+<details>
+    <summary>How do I delete my account?</summary>
+    <p><strong>Settings → Account → Delete Account.</strong> Confirm with your password and
+    type DELETE. This deletes the account itself, every synced record, and all sessions;
+    reminders are cancelled and the local copies are erased. Backups are purged within 30
+    days. It cannot be undone.</p>
+    <p>If you only want to stop syncing, use <strong>Sign Out</strong> instead — that keeps
+    both your account and your data.</p>
+</details>
+
+<details>
+    <summary>How do I get a copy of my data?</summary>
+    <p><strong>Settings → Your Data → Export.</strong> It produces a JSON file with every
+    place, activity, plan, alert and review, which you can share anywhere iOS allows.</p>
+</details>
+
+<details>
+    <summary>I signed in on a second device and my data did not appear.</summary>
+    <p>Open <strong>Settings → Account → Sync Now</strong> and check the status line. If it
+    reports an error, that error is the real reason — usually no connection. Nothing is
+    ever discarded on a failed sync; changes stay pending until it succeeds.</p>
+    <p>If you signed in with a <em>different</em> account than before, local records from the
+    previous account are cleared so two people's data can never mix.</p>
+</details>
+
+<details>
+    <summary>I edited the same plan on two devices. Which one wins?</summary>
+    <p>The most recently edited one. CloudCrown compares timestamps per record, so the
+    newer edit is kept and the older is replaced. There is no field-by-field merge.</p>
+</details>
+
+</div>
+
+<h2>Notifications and permissions</h2>
+<div class="faq">
+
+<details>
+    <summary>My alert rules never fire.</summary>
+    <p>Check three things, in order:</p>
+    <p>1. Notifications are allowed for CloudCrown in iOS Settings. Without permission
+    rules still evaluate, but nothing can be delivered — the app records this as
+    “held back” with the reason.</p>
+    <p>2. The rule is not paused, and its quiet hours are not covering the current time.</p>
+    <p>3. The rule is not in cooldown. Identical results are also de-duplicated, so the
+    same window never notifies you twice.</p>
+    <p>Open <strong>Alert Rules → Check All Rules Now</strong> to run the real check
+    immediately and see the outcome. Note that <em>Test Run</em> inside a rule is only a
+    preview and never sends anything.</p>
+</details>
+
+<details>
+    <summary>When are rules actually checked?</summary>
+    <p>Every time you open the app, every time you return to it, and in the background
+    when Background Refresh is on. iOS decides if and when a background check runs and may
+    skip it — that is a platform limitation, not a setting we can override.</p>
+</details>
+
+<details>
+    <summary>Why does it ask about tracking on first launch?</summary>
+    <p>To measure which campaign brought you to the app. Declining changes nothing about
+    how CloudCrown works — the advertising identifier is simply never collected. See the
+    <a href="/privacy">privacy policy</a> for exactly what is sent.</p>
+</details>
+
+<details>
+    <summary>Why does it want my location?</summary>
+    <p>Only when you tap <em>Use Current Location</em>, to save a place. It is never read in
+    the background. Declining blocks nothing: searching for a place by name works the same
+    way. You can also reduce precision to about 1&nbsp;km or 10&nbsp;km in
+    <strong>Settings → Location Precision</strong>.</p>
+</details>
+
+<details>
+    <summary>“Add to Calendar” did nothing.</summary>
+    <p>CloudCrown only ever opens the system event editor and records the event after iOS
+    confirms it was saved. If you closed that dialog without saving, no event was created —
+    which is why the plan still shows no calendar status. If the dialog never appeared,
+    calendar access is off in iOS Settings.</p>
+</details>
+
+</div>
+
+<h2>How it works</h2>
+<div class="faq">
+
+<details>
+    <summary>What is the difference between required and preferred conditions?</summary>
+    <p>A <strong>required</strong> condition blocks a window outright when it fails — no score
+    can rescue it. A <strong>preferred</strong> condition only shapes the score, weighted
+    against the others, and the weights must total 100%.</p>
+    <p>Without any preferred conditions a window can pass or fail, but there is nothing to
+    score, so no number is shown.</p>
+</details>
+
+<details>
+    <summary>Where does the weather data come from?</summary>
+    <p><a href="https://open-meteo.com/" rel="noopener">Open-Meteo</a>, under CC&nbsp;BY&nbsp;4.0.
+    Every value in the app shows its source, when it was last updated, and a confidence
+    level based on how far ahead the forecast reaches. Tap any measurement to see the raw
+    hourly readings behind it.</p>
+</details>
+
+<details>
+    <summary>Why is my saved plan marked “at risk”?</summary>
+    <p>Because a newer forecast broke one of its required conditions, or dropped its score
+    sharply. CloudCrown only raises this after comparing two actual forecast snapshots —
+    never on a guess. Open the plan to see what changed, then keep it, move to your backup
+    window, choose another, or cancel. Nothing is replaced until you confirm.</p>
+</details>
+
+<details>
+    <summary>Why does an old explanation say “Superseded”?</summary>
+    <p>Because a newer forecast exists. The explanation you saved is kept exactly as it was
+    produced rather than being silently rewritten, so you can always see what you actually
+    agreed to. Tap <em>Use the newest evaluation</em> to re-score it.</p>
+</details>
+
+<details>
+    <summary>Why do Insights need ten reviews?</summary>
+    <p>Below that, any pattern would be noise dressed up as a finding. Once you have ten
+    rated activities, every insight links to the exact plans it came from so you can check
+    it yourself.</p>
+</details>
+
+</div>
+
+<h2>Still stuck?</h2>
+<p>Email <a href="mailto:support@cloudcrown-app.space">support@cloudcrown-app.space</a>
+with your iOS version, app version, and what you expected to happen. Screenshots help.
+For anything about your personal data, see the <a href="/privacy">privacy policy</a>.</p>
+
+</div>
+</main>
+
+<footer class="site">
+    <div class="wrap">
+        <nav>
+            <a href="/">Home</a>
+            <a href="/privacy">Privacy Policy</a>
+            <a href="mailto:support@cloudcrown-app.space">support@cloudcrown-app.space</a>
+        </nav>
+        <p style="margin:0">&copy; 2026 LEGAL_ENTITY_NAME. CloudCrown for iOS.</p>
+    </div>
+</footer>
+
+</body>
+</html>

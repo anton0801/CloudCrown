@@ -1,0 +1,291 @@
+:root {
+    --azure: #2F8CFF;
+    --sky: #73D2FF;
+    --deep: #172B69;
+    --cloud: #F6FBFF;
+    --gold: #F5C84C;
+    --violet: #7857FF;
+
+    --ink: #172B69;
+    --ink-soft: #5A6B96;
+    --ink-faint: #8D9BBD;
+    --surface: #FFFFFF;
+    --sunken: #EDF5FE;
+    --hairline: #DCE8F7;
+    --page: #F6FBFF;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --ink: #EAF2FF;
+        --ink-soft: #A9BADD;
+        --ink-faint: #7C8CB0;
+        --surface: #14204A;
+        --sunken: #0F1937;
+        --hairline: #26355F;
+        --page: #0B1330;
+    }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font: 400 17px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Soft cool glow behind the page, matching the app's surfaces. */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    background:
+        radial-gradient(48rem 32rem at 12% -8%, color-mix(in srgb, var(--sky) 30%, transparent), transparent 70%),
+        radial-gradient(42rem 30rem at 92% 4%, color-mix(in srgb, var(--azure) 18%, transparent), transparent 70%),
+        radial-gradient(34rem 26rem at 82% 96%, color-mix(in srgb, var(--violet) 14%, transparent), transparent 70%);
+}
+
+.wrap { max-width: 46rem; margin: 0 auto; padding: 0 1.5rem; }
+.wrap--wide { max-width: 60rem; }
+
+/* ---------------------------------------------------------------- header */
+header.site {
+    padding: 2rem 0 0;
+}
+.brand {
+    display: inline-flex;
+    align-items: center;
+    gap: .6rem;
+    text-decoration: none;
+    color: var(--ink);
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: -0.01em;
+}
+.brand .mark {
+    display: grid;
+    place-items: center;
+    width: 2.1rem;
+    height: 2.1rem;
+    border-radius: .7rem;
+    background: linear-gradient(140deg, var(--sky), var(--azure));
+    box-shadow: 0 .35rem 1rem color-mix(in srgb, var(--azure) 35%, transparent);
+    font-size: 1.1rem;
+}
+
+/* ----------------------------------------------------------------- hero */
+.hero { padding: 3.5rem 0 2.5rem; text-align: center; }
+.hero .crown {
+    display: grid;
+    place-items: center;
+    width: 5.5rem;
+    height: 5.5rem;
+    margin: 0 auto 1.75rem;
+    border-radius: 50%;
+    background: var(--surface);
+    box-shadow: 0 1rem 2.5rem color-mix(in srgb, var(--azure) 22%, transparent);
+    font-size: 2.4rem;
+}
+h1 {
+    margin: 0 0 .75rem;
+    font-size: clamp(2rem, 7vw, 3rem);
+    line-height: 1.12;
+    letter-spacing: -0.025em;
+    font-weight: 800;
+}
+.hero .lede {
+    margin: 0 auto;
+    max-width: 34rem;
+    font-size: clamp(1.05rem, 2.4vw, 1.2rem);
+    color: var(--ink-soft);
+}
+
+/* --------------------------------------------------------------- buttons */
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .75rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .8rem 1.4rem;
+    border-radius: .85rem;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: .98rem;
+    border: 1px solid transparent;
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.btn:active { transform: scale(.98); }
+.btn--primary {
+    background: linear-gradient(140deg, var(--sky), var(--azure));
+    color: #fff;
+    box-shadow: 0 .5rem 1.4rem color-mix(in srgb, var(--azure) 34%, transparent);
+}
+.btn--primary:hover { box-shadow: 0 .7rem 1.8rem color-mix(in srgb, var(--azure) 45%, transparent); }
+.btn--ghost {
+    background: var(--surface);
+    color: var(--azure);
+    border-color: var(--hairline);
+}
+.btn--ghost:hover { background: var(--sunken); }
+
+/* ----------------------------------------------------------------- cards */
+.grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    margin: 3rem 0;
+}
+.card {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 1.1rem;
+    padding: 1.4rem;
+    box-shadow: 0 .4rem 1.4rem color-mix(in srgb, var(--azure) 7%, transparent);
+}
+.card h3 {
+    margin: 0 0 .4rem;
+    font-size: 1.02rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+.card p { margin: 0; color: var(--ink-soft); font-size: .95rem; }
+.card .ico { font-size: 1.15rem; }
+
+/* --------------------------------------------------------------- content */
+main.doc { padding: 2.5rem 0 1rem; }
+main.doc h1 { text-align: left; font-size: clamp(1.8rem, 5vw, 2.4rem); }
+.updated {
+    margin: 0 0 2.5rem;
+    color: var(--ink-faint);
+    font-size: .9rem;
+}
+main.doc h2 {
+    margin: 2.75rem 0 .75rem;
+    font-size: 1.28rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--hairline);
+}
+main.doc h2:first-of-type { border-top: 0; padding-top: 0; }
+main.doc h3 { margin: 1.75rem 0 .5rem; font-size: 1.05rem; font-weight: 700; }
+main.doc p, main.doc li { color: var(--ink-soft); }
+main.doc strong { color: var(--ink); font-weight: 650; }
+main.doc ul { padding-left: 1.25rem; }
+main.doc li { margin: .4rem 0; }
+main.doc a { color: var(--azure); }
+
+.note {
+    background: var(--sunken);
+    border: 1px solid var(--hairline);
+    border-left: 3px solid var(--gold);
+    border-radius: .7rem;
+    padding: 1rem 1.15rem;
+    margin: 1.5rem 0;
+    font-size: .95rem;
+}
+.note p { margin: 0; }
+.note p + p { margin-top: .6rem; }
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.25rem 0;
+    font-size: .93rem;
+    display: block;
+    overflow-x: auto;
+}
+th, td {
+    text-align: left;
+    padding: .65rem .8rem;
+    border-bottom: 1px solid var(--hairline);
+    vertical-align: top;
+}
+th { color: var(--ink); font-weight: 650; white-space: nowrap; }
+td { color: var(--ink-soft); }
+
+.faq { margin: 1.5rem 0; }
+details {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: .9rem;
+    padding: 0 1.15rem;
+    margin-bottom: .7rem;
+}
+summary {
+    cursor: pointer;
+    padding: 1rem 0;
+    font-weight: 650;
+    color: var(--ink);
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: center;
+}
+summary::-webkit-details-marker { display: none; }
+summary::after {
+    content: "+";
+    color: var(--azure);
+    font-weight: 700;
+    font-size: 1.2rem;
+    line-height: 1;
+}
+details[open] summary::after { content: "\2212"; }
+details > :not(summary) { margin-top: 0; padding-bottom: 1rem; }
+details p { margin: 0 0 .7rem; }
+details p:last-child { margin-bottom: 0; }
+
+.contact {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 1.1rem;
+    padding: 1.6rem;
+    text-align: center;
+    margin: 2.5rem 0;
+}
+.contact .mail {
+    display: inline-block;
+    margin: .5rem 0 1rem;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--azure);
+    text-decoration: none;
+    word-break: break-all;
+}
+
+/* ---------------------------------------------------------------- footer */
+footer.site {
+    margin-top: 4rem;
+    padding: 2rem 0 2.5rem;
+    border-top: 1px solid var(--hairline);
+    color: var(--ink-faint);
+    font-size: .88rem;
+}
+footer.site nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    margin-bottom: .9rem;
+}
+footer.site a { color: var(--ink-soft); text-decoration: none; }
+footer.site a:hover { color: var(--azure); }
+
+@media (max-width: 30rem) {
+    .actions .btn { width: 100%; justify-content: center; }
+}

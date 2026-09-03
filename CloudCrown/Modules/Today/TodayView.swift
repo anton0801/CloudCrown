@@ -88,6 +88,24 @@ struct TodayView: View {
             VStack(alignment: .leading, spacing: SkySpacing.l) {
                 placeHeader
 
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading, spacing: SkySpacing.s) {
+                        HStack(spacing: SkySpacing.s) {
+                            OlympusAccent(kind: .laurel, size: 38)
+                            OlympusAccent(kind: .lightning, size: 24)
+                            OlympusAccent(kind: .clouds, size: 24)
+                        }
+                        HStack(spacing: SkySpacing.s) {
+                            OlympusAccent(kind: .gem, size: 22)
+                            OlympusAccent(kind: .calendar, size: 22)
+                            OlympusAccent(kind: .timer, size: 22)
+                        }
+                    }
+                    Spacer(minLength: 0)
+                    OlympusAccent(kind: .zeus, size: 108)
+                }
+                .frame(height: 104)
+
                 if presenter.isCached {
                     CachedBanner(updatedAt: presenter.snapshot?.capturedAt, onRetry: presenter.refresh)
                 } else if presenter.snapshotIsStale {
@@ -251,6 +269,7 @@ struct TodayView: View {
                                         .foregroundColor(.white)
                                 }
                                 Spacer()
+                                OlympusAccent(kind: .microphone, size: 42)
                                 ZStack {
                                     Circle().fill(Color.white.opacity(0.18)).frame(width: 62, height: 62)
                                     VStack(spacing: 0) {

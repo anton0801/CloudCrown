@@ -1,11 +1,3 @@
-//
-//  RootView.swift
-//  CloudCrown
-//
-//  Main navigation: Today · Find Window · Plans · Places · History.
-//  Onboarding runs first and ends by creating one real entity — never demo data.
-//
-
 import SwiftUI
 
 enum AppTab: Int, CaseIterable, Identifiable {
@@ -34,12 +26,9 @@ enum AppTab: Int, CaseIterable, Identifiable {
     }
 }
 
-/// Cross-module navigation requests, so one section can hand off to another
-/// without duplicating state.
 @MainActor
 final class AppCoordinator: ObservableObject {
     @Published var selectedTab: AppTab = .today
-    /// Set when another section should open a specific entity on appear.
     @Published var pendingPlanID: UUID?
     @Published var pendingFinderActivityID: UUID?
     @Published var pendingFinderPlaceID: UUID?
@@ -56,22 +45,80 @@ final class AppCoordinator: ObservableObject {
     }
 }
 
+enum LaunchRoute: Equatable {
+    case splash
+    case offer(URL)
+    case analytics(URL)
+    case onboarding
+    case main
+}
+
 struct RootView: View {
 
     @EnvironmentObject private var environment: AppEnvironment
     @EnvironmentObject private var repository: DataRepository
+    @EnvironmentObject private var bootstrap: AppBootstrap
+    @EnvironmentObject private var networkGate: NetworkGate
     @StateObject private var coordinator = AppCoordinator()
 
+    @State private var minimumSplashElapsed = false
+    @State private var route: LaunchRoute = .splash
+    /// Once the special flow starts, an auth change must not yank the user out.
+    @State private var inSpecialFlow = false
+
+    private let minimumSplashDuration: TimeInterval = 1.6
+
     var body: some View {
-        Group {
-            if repository.settings.hasCompletedOnboarding {
-                mainTabs
-            } else {
-                OnboardingModule.build(environment: environment)
-                    .transition(.opacity)
+        ZStack {
+            content
+            if networkGate.isBlocked {
+                NoNetworkView().transition(.opacity)
             }
         }
-        .animation(.easeInOut(duration: 0.3), value: repository.settings.hasCompletedOnboarding)
+        .animation(.easeInOut(duration: 0.3), value: networkGate.isBlocked)
+        .animation(.easeInOut(duration: 0.3), value: route)
+        .task {
+            bootstrap.start()
+            try? await Task.sleep(nanoseconds: UInt64(minimumSplashDuration * 1_000_000_000))
+            minimumSplashElapsed = true
+            tryLeaveSplash()
+        }
+        .onChange(of: bootstrap.isFinished) { _ in tryLeaveSplash() }
+        .onChange(of: repository.settings.hasCompletedOnboarding) { _ in
+            guard !inSpecialFlow else { return }
+            tryLeaveSplash()
+        }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        switch route {
+        case .splash:
+            SplashView()
+        case .offer(let url):
+            NotificationOfferView {
+                withAnimation { route = .analytics(url) }
+            }
+        case .analytics(let url):
+            CrownView()
+        case .onboarding:
+            OnboardingModule.build(environment: environment)
+        case .main:
+            mainTabs
+        }
+    }
+
+    private func tryLeaveSplash() {
+        guard minimumSplashElapsed, bootstrap.isFinished else { return }
+        guard !inSpecialFlow else { return }
+
+        if let analyticsURL = bootstrap.result.analyticsURL {
+            UserDefaults.standard.set(analyticsURL.absoluteString, forKey: Dial.routeURL)
+            inSpecialFlow = true
+            route = NotificationOffer.shouldShow ? .offer(analyticsURL) : .analytics(analyticsURL)
+            return
+        }
+        route = repository.settings.hasCompletedOnboarding ? .main : .onboarding
     }
 
     private var mainTabs: some View {
