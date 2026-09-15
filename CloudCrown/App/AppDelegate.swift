@@ -174,7 +174,6 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
 
 extension AppDelegate: AppsFlyerLibDelegate, DeepLinkDelegate {
     func onConversionDataSuccess(_ conversionInfo: [AnyHashable: Any]) {
-        print("onConversionDataSuccess \(conversionInfo)")
         lead = conversionInfo
         arm()
         if trail.isEmpty == false { weld() }

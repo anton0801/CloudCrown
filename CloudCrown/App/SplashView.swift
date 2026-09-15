@@ -69,17 +69,10 @@ struct NoNetworkView: View {
                     .ignoresSafeArea()
                     .blur(radius: 5)
                 VStack(spacing: SkySpacing.l) {
-                    ZStack {
-                        Circle()
-                            .fill(SkyPalette.danger.opacity(0.10))
-                            .frame(width: 130, height: 130)
-                        Image(systemName: "wifi.slash")
-                            .font(.system(size: 42, weight: .light))
-                            .foregroundColor(SkyPalette.danger)
-                    }
+                    
                     Image("crown-e")
                         .resizable()
-                        .frame(width: 310, height: 300)
+                        .frame(width: 260, height: 250)
                     LightningLine()
                         .stroke(SkyPalette.danger.opacity(0.6),
                                 style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
